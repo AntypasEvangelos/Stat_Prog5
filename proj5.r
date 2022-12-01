@@ -5,8 +5,10 @@
 
 ## Fixing the working directory
 ## This line will be commented out in the final version
-library(rjags)
-setwd("C:\\Users\\Vaggelis Antypas\\SP_Practical5")
+
+setwd("M:/Stat_Prog5")
+
+##setwd("C:\\Users\\Vaggelis Antypas\\SP_Practical5")
 
 ##-----------------------------------------------------------------------------
 
@@ -159,7 +161,7 @@ excess_deaths_2020 <-  sum(deaths[157:208]) - sum(preds_2020)
 ## Plotting observed deaths from the start of 2020 vs weeks, along with the 
 ## excess deaths for the year 2020
 
-plot(weeks[157:305], deaths[157:305],
+plot(deaths[157:305],
      main = paste(" Actual Deaths from 2020 vs Weeks, 
                   Total Excess deaths from 2020::",floor(excess_deaths),
                   "//Excess deaths in 2020::",floor(excess_deaths_2020)),
@@ -168,7 +170,7 @@ plot(weeks[157:305], deaths[157:305],
 
 ## Adding excess deaths on the graph 
 
-lines(weeks[157:305], preds, type = "l", col = "red", lwd=2.0)
+lines(preds, type = "l", col = "red", lwd=2.0)
 
 ## Adding a legend 
   
@@ -181,7 +183,7 @@ vec_excess_deaths <- deaths[157:305] - tot_preds
 
 cumsum_excess_deaths <- cumsum(vec_excess_deaths)
 
-plot(weeks[157:305],cumsum_excess_deaths,main = "Cummulative excess deaths vs Weeks", 
+plot(cumsum_excess_deaths,main = "Cummulative excess deaths vs Weeks", 
      xlab = "Weeks", ylab = "Excess deaths", pch = 19)
   
   
@@ -193,16 +195,39 @@ legend("topleft", legend=c("Cummulative excess deaths"),
   
 ## JAGS model
 
-## library(rjags)
-model <- jags.model("model.jags",data=list(x=deaths,N=length(deaths)))
+library(rjags)
+
+## Excess deaths from 2020
+exc_deaths <- deaths[157:305] - death_pred(mpop20,fpop20,mm,mf,d[157:305])
+
+## Modified deaths
+
+exc_deaths[51:53]   <- NA
+exc_deaths[105:106] <- NA
+
+mod <- jags.model("model.jags",data=list(x=exc_deaths,N=length(exc_deaths)))
+sam <- coda.samples(mod,c("mu","rho","k"),n.iter=10000) 
+rho <- sam[[1]][,152]
+
+## Trace plots and histogramms
+traceplot(rho)
+hist(rho)
   
+## Extracting mu and discarding the last column because the weeks are
+## only 305
+mu <- sam[[1]][,2:150]
   
-  
-  
-  
-  
-  
-  
+## Computing the expected value vector
+
+rows <- dim(mu)[1]
+cols <- dim(mu)[2]
+
+ev_mu <- colMeans(mu)
+
+## Residuals
+
+plot((exc_deaths - ev_mu), main = "Residuals vs weeks", xlab = "Weeks" , 
+     ylab = "Residuals")
   
   
   
